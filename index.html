@@ -138,11 +138,11 @@
         }
 
         .formula-list {
-            font-family: 'Courier New', Courier, monospace;
             background: #f1f1f1;
-            padding: 10px;
+            padding: 15px;
             border-radius: 6px;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
+            line-height: 1.8;
         }
     </style>
 </head>
@@ -180,7 +180,7 @@
                     <ul style="font-size:0.85rem; padding-left: 20px; color:#555;">
                         <li>FFU 설치 대수: 10,000 대 (고정)</li>
                         <li>시간당 웨이퍼 처리량: 약 139개 (월 10만개 기준)</li>
-                        <li>최대 가동시 전력비(E_max): 268,400원/시간 (고정)</li>
+                        <li>최대 가동시 전력비(E<sub>max</sub>): 268,400원/시간 (고정)</li>
                     </ul>
                 </div>
             </div>
@@ -188,7 +188,7 @@
             <div class="card">
                 <div class="card-title">2. FFU 가동률 실시간 조절</div>
                 <div class="form-group">
-                    <label for="rateSlider">FFU 가동률 ($x$):</label>
+                    <label for="rateSlider">FFU 가동률 (x):</label>
                     <div class="slider-container">
                         <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.001" value="0.95" oninput="calculate()">
                         <span class="slider-value" id="rateValue">95.0%</span>
@@ -199,8 +199,8 @@
                     <div>현재 가동률에서의 시간당 총비용:</div>
                     <div class="result-value" id="currentTotalCost">0 원</div>
                     <div style="font-size:0.85rem; color:#666; margin-top:5px;">
-                        • 전력비 $E(x)$: <span id="currentCostE">0</span>원<br>
-                        • 불량 손실비 $L(x)$: <span id="currentCostL">0</span>원
+                        • 전력비 E(x): <span id="currentCostE">0</span>원<br>
+                        • 불량 손실비 L(x): <span id="currentCostL">0</span>원
                     </div>
                 </div>
 
@@ -227,11 +227,12 @@
                 <div class="card-title">4. 수학적 모델링 수학식</div>
                 <div class="formula-list">
                     <strong>전력 소비 비용 함수 (송풍기 상사법칙 적용):</strong><br>
-                    $E(x) = 268,400 \cdot x^3$<br><br>
-                    <strong>불량 손실 비용 함수 ($x=1$ 일 때 손실 0원):</strong><br>
-                    $L(x) = 1,052,513,639 \cdot (x - 1)^2$<br><br>
+                    E(x) = 268,400 × x<sup>3</sup><br><br>
+                    <strong>불량 손실 비용 함수 (x = 1 일 때 손실 0원):</strong><br>
+                    L(x) = 1,052,513,639 × (x - 1)<sup>2</sup><br><br>
                     <strong>총비용 함수:</strong><br>
-                    $y = f(x) = E(x) + L(x) = 268,400x^3 + 1,052,513,639(x-1)^2$
+                    y = f(x) = E(x) + L(x)<br>
+                    y = 268,400x<sup>3</sup> + 1,052,513,639(x - 1)<sup>2</sup>
                 </div>
             </div>
         </div>
