@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>반도체 클린룸 FFU 최적 가동률 시뮬레이터</title>
+    <!-- Chart.js 라이브러리 (그래프 시각화) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 1.8rem; }
+        p.subtitle { margin: 0; color: #666; font-size: 0.95rem; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            min-width: 50px;
+        }
+
+        .result-box {
+            background-color: #eef6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        .result-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        .optimal-box {
+            background-color: #e8f8f5;
+            border-left: 4px solid #2ecc71;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        .formula-list {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>반도체 FAB 클린룸 FFU 가동률 최적화 모델</h1>
+        <p class="subtitle">전력 소비 비용(상사법칙 3제곱)과 불량 손실 비용 간의 최적 균형점 탐구 시뮬레이터</p>
+    </header>
+
+    <div class="grid">
+        <!-- 제어 및 입력 파트 -->
+        <div>
+            <div class="card">
+                <div class="card-title">1. 시뮬레이션 변수 설정</div>
+                
+                <div class="form-group">
+                    <label>웨이퍼 단가 설정 옵션</label>
+                    <select id="waferPreset" onchange="updateWaferPrice()">
+                        <option value="custom">직접 입력 / 모델 기본값 사용</option>
+                        <option value="150000">300mm 프라임 웨이퍼 (약 15만원)</option>
+                        <option value="15000000">완성 공정 적용 웨이퍼 (약 1,500만원)</option>
+                        <option value="7575000" selected>평균 가치 모델값 (약 757.5만원)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="waferPrice">웨이퍼 개당 단가 (원)</label>
+                    <input type="number" id="waferPrice" value="7575000" step="10000" oninput="calculate()">
+                </div>
+
+                <div class="form-group">
+                    <label>고정 조건 정보</label>
+                    <ul style="font-size:0.85rem; padding-left: 20px; color:#555;">
+                        <li>FFU 설치 대수: 10,000 대 (고정)</li>
+                        <li>시간당 웨이퍼 처리량: 약 139개 (월 10만개 기준)</li>
+                        <li>최대 가동시 전력비(E_max): 268,400원/시간 (고정)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">2. FFU 가동률 실시간 조절</div>
+                <div class="form-group">
+                    <label for="rateSlider">FFU 가동률 ($x$):</label>
+                    <div class="slider-container">
+                        <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.01" value="0.95" oninput="calculate()">
+                        <span class="slider-value" id="rateValue">95%</span>
+                    </div>
+                </div>
+
+                <div class="result-box">
+                    <div>현재 가동률에서의 시간당 총비용:</div>
+                    <div class="result-value" id="currentTotalCost">0 원</div>
+                    <div style="font-size:0.85rem; color:#666; margin-top:5px;">
+                        • 전력비 $E(x)$: <span id="currentCostE">0</span>원<br>
+                        • 불량 손실비 $L(x)$: <span id="currentCostL">0</span>원
+                    </div>
+                </div>
+
+                <div class="optimal-box">
+                    <div style="font-weight:bold; color:#27ae60;">💡 최적 가동 조건 (최소 비용 지점)</div>
+                    <div style="font-size:1.1rem; margin-top:5px;">
+                        • 최적 FFU 가동률: <span id="optRate" style="font-weight:bold;">0%</span><br>
+                        • 최소 시간당 공장 유지비용: <span id="optCost" style="font-weight:bold;">0 원</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 그래프 및 수식 모델 파트 -->
+        <div>
+            <div class="card">
+                <div class="card-title">3. 가동률 변화에 따른 비용 곡선</div>
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">4. 수학적 모델링 수학식</div>
+                <div class="formula-list">
+                    <strong>전력 소비 비용 함수 (송풍기 상사법칙 적용):</strong><br>
+                    $E(x) = 268,400 \cdot x^3$<br><br>
+                    <strong>불량 손실 비용 함수 ($x=1$ 일 때 손실 0원):</strong><br>
+                    $L(x) = 1,052,513,639 \cdot (x - 1)^2$<br><br>
+                    <strong>총비용 함수:</strong><br>
+                    $y = f(x) = E(x) + L(x) = 268,400x^3 + 1,052,513,639(x-1)^2$
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let myChart = null;
+
+    function updateWaferPrice() {
+        const preset = document.getElementById('waferPreset').value;
+        if(preset !== 'custom') {
+            document.getElementById('waferPrice').value = preset;
+            calculate();
+        }
+    }
+
+    function calculate() {
+        const x = parseFloat(document.getElementById('rateSlider').value);
+        document.getElementById('rateValue').innerText = Math.round(x * 100) + '%';
+
+        // 사용자 설정 단가에 따른 L(x) 계수 조정
+        const waferPrice = parseFloat(document.getElementById('waferPrice').value) || 7575000;
+        // 기본 모델(1,052,513,639) 대비 단가 비례 계수 계산
+        const basePrice = 7575000; 
+        const L_coeff = 1052513639 * (waferPrice / basePrice);
+
+        // 현재 x 값에서의 비용 계산
+        const Ex = 268400 * Math.pow(x, 3);
+        const Lx = L_coeff * Math.pow(x - 1, 2);
+        const Total = Ex + Lx;
+
+        document.getElementById('currentCostE').innerText = Math.round(Ex).toLocaleString();
+        document.getElementById('currentCostL').innerText = Math.round(Lx).toLocaleString();
+        document.getElementById('currentTotalCost').innerText = Math.round(Total).toLocaleString() + ' 원';
+
+        // 0.3 ~ 1.0 구간 탐색하여 최적 가동률(최소비용) 계산
+        let minCost = Infinity;
+        let bestX = 1.0;
+
+        const xValues = [];
+        const eData = [];
+        const lData = [];
+        const totalData = [];
+
+        for (let rate = 0.30; rate <= 1.001; rate += 0.01) {
+            const curE = 268400 * Math.pow(rate, 3);
+            const curL = L_coeff * Math.pow(rate - 1, 2);
+            const curTotal = curE + curL;
+
+            if (curTotal < minCost) {
+                minCost = curTotal;
+                bestX = rate;
+            }
+
+            xValues.push(Math.round(rate * 100) + '%');
+            eData.push(Math.round(curE));
+            lData.push(Math.round(curL));
+            totalData.push(Math.round(curTotal));
+        }
+
+        document.getElementById('optRate').innerText = (bestX * 100).toFixed(1) + '%';
+        document.getElementById('optCost').innerText = Math.round(minCost).toLocaleString() + ' 원';
+
+        // Chart.js 그래프 업데이트
+        renderChart(xValues, eData, lData, totalData);
+    }
+
+    function renderChart(labels, eData, lData, totalData) {
+        const ctx = document.getElementById('costChart').getContext('2d');
+        
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '총비용 f(x)',
+                        data: totalData,
+                        borderColor: '#d9534f',
+                        backgroundColor: 'rgba(217, 83, 79, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 1
+                    },
+                    {
+                        label: '불량 손실비 L(x)',
+                        data: lData,
+                        borderColor: '#f0ad4e',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    },
+                    {
+                        label: '전력 소비비 E(x)',
+                        data: eData,
+                        borderColor: '#0275d8',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'FFU 가동률 (%)' }
+                    },
+                    y: {
+                        title: { display: true, text: '시간당 비용 (원)' },
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    // 페이지 진입 시 최초 계산 실행
+    window.onload = function() {
+        calculate();
+    };
+</script>
+
+</body>
+</html>
