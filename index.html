@@ -86,6 +86,12 @@
             box-sizing: border-box;
         }
 
+        input[type="number"]:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+        }
+
         .slider-container {
             display: flex;
             align-items: center;
@@ -156,17 +162,17 @@
                 
                 <div class="form-group">
                     <label>웨이퍼 단가 설정 옵션</label>
-                    <select id="waferPreset" onchange="updateWaferPrice()">
-                        <option value="custom">직접 입력 / 모델 기본값 사용</option>
+                    <select id="waferPreset" onchange="updateWaferPriceOption()">
+                        <option value="7575000" selected>평균 가치 모델값 (약 757.5만원)</option>
                         <option value="150000">300mm 프라임 웨이퍼 (약 15만원)</option>
                         <option value="15000000">완성 공정 적용 웨이퍼 (약 1,500만원)</option>
-                        <option value="7575000" selected>평균 가치 모델값 (약 757.5만원)</option>
+                        <option value="custom">직접 입력</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="waferPrice">웨이퍼 개당 단가 (원)</label>
-                    <input type="number" id="waferPrice" value="7575000" step="10000" oninput="calculate()">
+                    <input type="number" id="waferPrice" value="7575000" step="10000" disabled oninput="calculate()">
                 </div>
 
                 <div class="form-group">
@@ -184,8 +190,8 @@
                 <div class="form-group">
                     <label for="rateSlider">FFU 가동률 ($x$):</label>
                     <div class="slider-container">
-                        <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.01" value="0.95" oninput="calculate()">
-                        <span class="slider-value" id="rateValue">95%</span>
+                        <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.001" value="0.95" oninput="calculate()">
+                        <span class="slider-value" id="rateValue">95.0%</span>
                     </div>
                 </div>
 
@@ -235,21 +241,26 @@
 <script>
     let myChart = null;
 
-    function updateWaferPrice() {
-        const preset = document.getElementById('waferPreset').value;
-        if(preset !== 'custom') {
-            document.getElementById('waferPrice').value = preset;
-            calculate();
+    function updateWaferPriceOption() {
+        const presetSelect = document.getElementById('waferPreset');
+        const waferPriceInput = document.getElementById('waferPrice');
+        
+        if (presetSelect.value === 'custom') {
+            waferPriceInput.disabled = false;
+            waferPriceInput.focus();
+        } else {
+            waferPriceInput.disabled = true;
+            waferPriceInput.value = presetSelect.value;
         }
+        calculate();
     }
 
     function calculate() {
         const x = parseFloat(document.getElementById('rateSlider').value);
-        document.getElementById('rateValue').innerText = Math.round(x * 100) + '%';
+        document.getElementById('rateValue').innerText = (x * 100).toFixed(1) + '%';
 
         // 사용자 설정 단가에 따른 L(x) 계수 조정
         const waferPrice = parseFloat(document.getElementById('waferPrice').value) || 7575000;
-        // 기본 모델(1,052,513,639) 대비 단가 비례 계수 계산
         const basePrice = 7575000; 
         const L_coeff = 1052513639 * (waferPrice / basePrice);
 
@@ -262,10 +273,22 @@
         document.getElementById('currentCostL').innerText = Math.round(Lx).toLocaleString();
         document.getElementById('currentTotalCost').innerText = Math.round(Total).toLocaleString() + ' 원';
 
-        // 0.3 ~ 1.0 구간 탐색하여 최적 가동률(최소비용) 계산
+        // 0.3 ~ 1.0 구간 정밀 탐색 (0.0001 = 0.01% 단위)
         let minCost = Infinity;
         let bestX = 1.0;
 
+        for (let rate = 0.30; rate <= 1.0001; rate += 0.0001) {
+            const curE = 268400 * Math.pow(rate, 3);
+            const curL = L_coeff * Math.pow(rate - 1, 2);
+            const curTotal = curE + curL;
+
+            if (curTotal < minCost) {
+                minCost = curTotal;
+                bestX = rate;
+            }
+        }
+
+        // 그래프용 데이터 세트 생성 (1% 단위)
         const xValues = [];
         const eData = [];
         const lData = [];
@@ -276,18 +299,14 @@
             const curL = L_coeff * Math.pow(rate - 1, 2);
             const curTotal = curE + curL;
 
-            if (curTotal < minCost) {
-                minCost = curTotal;
-                bestX = rate;
-            }
-
-            xValues.push(Math.round(rate * 100) + '%');
+            xValues.push((rate * 100).toFixed(0) + '%');
             eData.push(Math.round(curE));
             lData.push(Math.round(curL));
             totalData.push(Math.round(curTotal));
         }
 
-        document.getElementById('optRate').innerText = (bestX * 100).toFixed(1) + '%';
+        // 최적값 표시 (소수점 둘째 자리까지 표시)
+        document.getElementById('optRate').innerText = (bestX * 100).toFixed(2) + '%';
         document.getElementById('optCost').innerText = Math.round(minCost).toLocaleString() + ' 원';
 
         // Chart.js 그래프 업데이트
