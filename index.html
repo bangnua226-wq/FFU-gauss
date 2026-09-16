@@ -109,6 +109,23 @@
             min-width: 50px;
         }
 
+        .btn-optimal {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-optimal:hover {
+            background-color: #219150;
+        }
+
         .result-box {
             background-color: #eef6ff;
             border-left: 4px solid var(--primary-color);
@@ -172,7 +189,7 @@
 
                 <div class="form-group">
                     <label for="waferPrice">웨이퍼 개당 단가 (원)</label>
-                    <input type="number" id="waferPrice" value="7575000" step="10000" disabled oninput="calculate()">
+                    <input type="number" id="waferPrice" value="7575000" step="10000" disabled oninput="onCustomPriceInput()">
                 </div>
 
                 <div class="form-group">
@@ -193,6 +210,7 @@
                         <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.001" value="0.95" oninput="calculate()">
                         <span class="slider-value" id="rateValue">95.0%</span>
                     </div>
+                    <button class="btn-optimal" onclick="moveToOptimalRate()">🎯 최적 가동률로 맞추기</button>
                 </div>
 
                 <div class="result-box">
@@ -241,6 +259,7 @@
 
 <script>
     let myChart = null;
+    let currentBestX = 1.0;
 
     function updateWaferPriceOption() {
         const presetSelect = document.getElementById('waferPreset');
@@ -253,28 +272,26 @@
             waferPriceInput.disabled = true;
             waferPriceInput.value = presetSelect.value;
         }
-        calculate();
+        
+        // 단가가 바뀌면 최적 가동률을 새로 계산하고 슬라이더를 그 위치로 이동
+        calculate(true);
     }
 
-    function calculate() {
-        const x = parseFloat(document.getElementById('rateSlider').value);
-        document.getElementById('rateValue').innerText = (x * 100).toFixed(1) + '%';
+    function onCustomPriceInput() {
+        calculate(true);
+    }
 
-        // 사용자 설정 단가에 따른 L(x) 계수 조정
+    function moveToOptimalRate() {
+        document.getElementById('rateSlider').value = currentBestX;
+        calculate(false);
+    }
+
+    function calculate(autoMoveToOptimal = false) {
+        // 1. 최적 가동률 미리 정밀 탐색 (0.0001 = 0.01% 단위)
         const waferPrice = parseFloat(document.getElementById('waferPrice').value) || 7575000;
         const basePrice = 7575000; 
         const L_coeff = 1052513639 * (waferPrice / basePrice);
 
-        // 현재 x 값에서의 비용 계산
-        const Ex = 268400 * Math.pow(x, 3);
-        const Lx = L_coeff * Math.pow(x - 1, 2);
-        const Total = Ex + Lx;
-
-        document.getElementById('currentCostE').innerText = Math.round(Ex).toLocaleString();
-        document.getElementById('currentCostL').innerText = Math.round(Lx).toLocaleString();
-        document.getElementById('currentTotalCost').innerText = Math.round(Total).toLocaleString() + ' 원';
-
-        // 0.3 ~ 1.0 구간 정밀 탐색 (0.0001 = 0.01% 단위)
         let minCost = Infinity;
         let bestX = 1.0;
 
@@ -288,8 +305,27 @@
                 bestX = rate;
             }
         }
+        
+        currentBestX = bestX;
 
-        // 그래프용 데이터 세트 생성 (1% 단위)
+        // 단가 변경 시 최적 가동률 위치로 자동 이동 옵션
+        if (autoMoveToOptimal) {
+            document.getElementById('rateSlider').value = currentBestX;
+        }
+
+        // 2. 현재 슬라이더 위치에서의 값 계산
+        const x = parseFloat(document.getElementById('rateSlider').value);
+        document.getElementById('rateValue').innerText = (x * 100).toFixed(1) + '%';
+
+        const Ex = 268400 * Math.pow(x, 3);
+        const Lx = L_coeff * Math.pow(x - 1, 2);
+        const Total = Ex + Lx;
+
+        document.getElementById('currentCostE').innerText = Math.round(Ex).toLocaleString();
+        document.getElementById('currentCostL').innerText = Math.round(Lx).toLocaleString();
+        document.getElementById('currentTotalCost').innerText = Math.round(Total).toLocaleString() + ' 원';
+
+        // 3. 그래프용 데이터 세트 생성 (1% 단위)
         const xValues = [];
         const eData = [];
         const lData = [];
@@ -306,7 +342,7 @@
             totalData.push(Math.round(curTotal));
         }
 
-        // 최적값 표시 (소수점 둘째 자리까지 표시)
+        // 4. 최적값 표시 (소수점 둘째 자리까지 표시)
         document.getElementById('optRate').innerText = (bestX * 100).toFixed(2) + '%';
         document.getElementById('optCost').innerText = Math.round(minCost).toLocaleString() + ' 원';
 
@@ -375,9 +411,9 @@
         });
     }
 
-    // 페이지 진입 시 최초 계산 실행
+    // 페이지 접속 시 초기 계산 및 최적 가동률 위치로 슬라이더 세팅
     window.onload = function() {
-        calculate();
+        calculate(true);
     };
 </script>
 
