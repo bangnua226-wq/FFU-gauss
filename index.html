@@ -259,8 +259,9 @@
             line-height: 1.8;
         }
 
-        .highlight-coeff {
-            color: #d9534f;
+        /* 수식 색상 통일 스타일 */
+        .formula-text {
+            color: #0056b3;
             font-weight: bold;
         }
     </style>
@@ -309,15 +310,16 @@
                     <div class="info-box">
                         <h4>전력 소비 비용 함수 E(x)</h4>
                         <p>송풍기 상사법칙에 따라 소비 전력은 가동률 x의 3제곱에 비례합니다.</p>
-                        <p style="margin-top:10px; color:var(--primary-color);">
+                        <p style="margin-top:10px;" class="formula-text">
                             E(x) = E<sub>max</sub> · x<sup>3</sup> = 268,400 · x<sup>3</sup>
                         </p>
                     </div>
                     <div class="info-box">
                         <h4>불량 손실 비용 함수 L(x)</h4>
-                        <p>x = 1 일 때 손실은 0원이며, 시간당 처리량과 웨이퍼 단가에 비례하여 이차함수 형태로 손실이 발생합니다.</p>
-                        <p style="margin-top:10px; color:#d9534f;">
-                            L(x) = k(P) · (x - 1)<sup>2</sup>
+                        <p>x = 1 일 때 손실은 0원이며, 계수 k(P)는 시간당 처리량과 웨이퍼 단가의 곱으로 정의됩니다.</p>
+                        <p style="margin-top:10px;" class="formula-text">
+                            k(P) = 시간당 처리량 × 웨이퍼 단가<br>
+                            L(x) = 시간당 처리량 × 웨이퍼 단가 × (x - 1)<sup>2</sup> = k(P) · (x - 1)<sup>2</sup>
                         </p>
                     </div>
                 </div>
@@ -328,8 +330,9 @@
         <div class="slide-card">
             <div class="slide-title">3. 총비용 함수 합성 및 최적화</div>
             <div class="slide-content">
-                총비용 함수 y = f(x) = E(x) + L(x) = 268,400x<sup>3</sup> + k(P)(x - 1)<sup>2</sup><br>
-                미분을 통한 최적화: f'(x) = 3 E<sub>max</sub> x<sup>2</sup> + 2 k(P) (x - 1) = 0 조건에서 최적 FFU 가동률 x*를 구합니다.
+                총비용 함수:<br>
+                <span class="formula-text">y = f(x) = E(x) + L(x) = 268,400x<sup>3</sup> + k(P)(x - 1)<sup>2</sup></span><br><br>
+                전력 소비 증가 곡선(3제곱)과 불량 손실 감소 곡선의 합이 최소가 되는 지점을 찾아 최적 가동률 x를 결정합니다.
             </div>
         </div>
     </div>
@@ -413,12 +416,13 @@
                     <div class="card-title">4. 수학적 모델링 수학식</div>
                     <div class="formula-list">
                         전력 소비 비용 함수 (송풍기 상사법칙 적용):<br>
-                        E(x) = 268,400 × x<sup>3</sup><br><br>
-                        불량 손실 비용 함수 (x = 1 일 때 손실 0원):<br>
-                        L(x) = <span id="formulaLCoeff" class="highlight-coeff">1,052,513,639</span> × (x - 1)<sup>2</sup><br><br>
+                        <span class="formula-text">E(x) = 268,400 × x<sup>3</sup></span><br><br>
+                        불량 손실 비용 함수 (k(P) = 시간당 처리량 × 웨이퍼 단가):<br>
+                        <span class="formula-text">L(x) = 시간당 처리량 × 웨이퍼 단가 × (x - 1)<sup>2</sup></span><br>
+                        <span class="formula-text">L(x) = <span id="formulaLCoeff">1,052,513,639</span> × (x - 1)<sup>2</sup></span><br><br>
                         총비용 함수:<br>
-                        y = f(x) = E(x) + L(x)<br>
-                        y = 268,400x<sup>3</sup> + <span id="formulaTotalCoeff" class="highlight-coeff">1,052,513,639</span>(x - 1)<sup>2</sup>
+                        <span class="formula-text">y = f(x) = E(x) + L(x)</span><br>
+                        <span class="formula-text">y = 268,400x<sup>3</sup> + <span id="formulaTotalCoeff">1,052,513,639</span>(x - 1)<sup>2</sup></span>
                     </div>
                 </div>
             </div>
