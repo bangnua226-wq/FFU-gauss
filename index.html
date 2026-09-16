@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>반도체 클린룸 FFU 최적 가동률 시뮬레이터</title>
+    <title>반도체 FAB 클린룸 FFU 가동률 최적화 모델</title>
     <!-- Chart.js 라이브러리 (그래프 시각화) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #0056b3;
-            --bg-color: #f8f9fa;
+            --accent-color: #27ae60;
+            --bg-color: #f4f7f6;
             --card-bg: #ffffff;
             --text-color: #333;
         }
@@ -24,30 +25,130 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1080px;
             margin: 0 auto;
+        }
+
+        /* Top Navigation (탭 버튼) */
+        .top-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .nav-btn {
+            background-color: #ffffff;
+            color: #495057;
+            border: 2px solid #dee2e6;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+
+        .nav-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
+        }
+
+        /* View Section Toggle */
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
         }
 
         header {
             text-align: center;
-            padding: 20px 0;
+            padding: 25px 0;
             background: var(--card-bg);
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         h1 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 1.8rem; }
         p.subtitle { margin: 0; color: #666; font-size: 0.95rem; }
 
+        /* Presentation Layout & Slide Styling */
+        .slide-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .slide-title {
+            font-size: 1.35rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slide-content {
+            font-size: 1rem;
+            color: #444;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-3, .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .info-box h4 {
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .info-box p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Simulator Styles */
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
         }
 
         .card {
@@ -110,7 +211,7 @@
         }
 
         .btn-optimal {
-            background-color: #27ae60;
+            background-color: var(--accent-color);
             color: white;
             border: none;
             padding: 8px 14px;
@@ -171,91 +272,172 @@
 <body>
 
 <div class="container">
-    <header>
-        <h1>반도체 FAB 클린룸 FFU 가동률 최적화 모델</h1>
-        <p class="subtitle">전력 소비 비용(상사법칙 3제곱)과 불량 손실 비용 간의 최적 균형점 탐구 시뮬레이터</p>
-    </header>
+    <!-- 화면 전환 상단 탭 버튼 -->
+    <div class="top-nav">
+        <button id="btnPresentation" class="nav-btn active" onclick="switchView('presentation')">📢 프레젠테이션</button>
+        <button id="btnSimulator" class="nav-btn" onclick="switchView('simulator')">⚙️ 실시간 시뮬레이터</button>
+    </div>
 
-    <div class="grid">
-        <!-- 제어 및 입력 파트 -->
-        <div>
-            <div class="card">
-                <div class="card-title">1. 시뮬레이션 변수 설정</div>
-                
-                <div class="form-group">
-                    <label>웨이퍼 단가 설정 옵션</label>
-                    <select id="waferPreset" onchange="updateWaferPriceOption()">
-                        <option value="7575000" selected>평균 가치 모델값 (약 757.5만원)</option>
-                        <option value="150000">300mm 프라임 웨이퍼 (약 15만원)</option>
-                        <option value="15000000">완성 공정 적용 웨이퍼 (약 1,500만원)</option>
-                        <option value="custom">직접 입력</option>
-                    </select>
-                </div>
+    <!-- 1. 프레젠테이션 화면 -->
+    <div id="presentationView" class="view-section active">
+        <header>
+            <h1>반도체 FAB 클린룸 FFU 가동률 최적화 모델</h1>
+            <p class="subtitle">전력 소비 절감과 불량 손실 최소화의 수학적 최적화 탐구</p>
+        </header>
 
-                <div class="form-group">
-                    <label for="waferPrice">웨이퍼 개당 단가 (원)</label>
-                    <input type="number" id="waferPrice" value="7575000" step="10000" disabled oninput="onCustomPriceInput()">
-                </div>
-
-                <div class="form-group">
-                    <label>고정 조건 정보</label>
-                    <ul style="font-size:0.85rem; padding-left: 20px; color:#555;">
-                        <li>FFU 설치 대수: 10,000 대 (고정)</li>
-                        <li>시간당 웨이퍼 처리량: 약 139개 (월 10만개 기준)</li>
-                        <li>최대 가동시 전력비(E<sub>max</sub>): 268,400원/시간 (고정)</li>
-                    </ul>
-                </div>
+        <!-- Slide 1: 탐구 배경 및 목적 -->
+        <div class="slide-card">
+            <div class="slide-title">1. 탐구 배경 및 목적</div>
+            <div class="slide-content">
+                반도체 생산 공장(FAB)의 클린룸 청정도를 유지하는 **FFU(Fan Filter Unit)**는 24시간 연속 운전되는 고소비 전력 설비입니다.<br>
+                전력비를 아끼기 위해 FFU 가동률을 낮추면 미세입자 유입으로 인한 **웨이퍼 불량 손실비**가 급증하고, 가동률을 높이면 **전력 소비 비용**이 급증하는 상충 관계(Trade-off)가 발생합니다.<br>
+                본 탐구는 미분을 활용하여 이 두 비용의 합을 최소화하는 **최적 가동률**을 도출하는 데 목적이 있습니다.
             </div>
+        </div>
 
-            <div class="card">
-                <div class="card-title">2. FFU 가동률 실시간 조절</div>
-                <div class="form-group">
-                    <label for="rateSlider">FFU 가동률 (x):</label>
-                    <div class="slider-container">
-                        <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.0001" value="0.95" oninput="calculate()">
-                        <span class="slider-value" id="rateValue">95.00%</span>
+        <!-- Slide 2: 수치 산출 근거 -->
+        <div class="slide-card">
+            <div class="slide-title">2. 수학적 모델링 수치 산출 근거</div>
+            <div class="slide-content">
+                실제 산업 환경에 기반한 신뢰성 있는 모델을 구축하기 위해 아래와 같이 조건을 설정했습니다.
+                <div class="grid-3">
+                    <div class="info-box">
+                        <h4>⚡ 공업용 전력 단가</h4>
+                        <p>고압 A, 선택 III 조건을 기준으로 봄·가을·여름·겨울 및 경·중간·최대 부하 시간대별 전력 요금을 종합 반영한 **평균 요금**을 도출하여 적용했습니다.</p>
                     </div>
-                    <button class="btn-optimal" onclick="moveToOptimalRate()">🎯 최적 가동률로 맞추기</button>
-                </div>
-
-                <div class="result-box">
-                    <div>현재 가동률에서의 시간당 총비용:</div>
-                    <div class="result-value" id="currentTotalCost">0 원</div>
-                    <div style="font-size:0.85rem; color:#666; margin-top:5px;">
-                        • 전력비 E(x): <span id="currentCostE">0</span>원<br>
-                        • 불량 손실비 L(x): <span id="currentCostL">0</span>원
+                    <div class="info-box">
+                        <h4>🏭 FFU 설치 대수 (10,000대)</h4>
+                        <p>산업 보도자료 분석을 통해 주요 반도체 공장 규격별 누적 생산 대수를 역산하여, 최신 표준 규격 FAB 1개소당 설치 대수를 **10,000대**로 설정했습니다.</p>
                     </div>
-                </div>
-
-                <div class="optimal-box">
-                    <div style="font-weight:bold; color:#27ae60;">💡 최적 가동 조건 (최소 비용 지점)</div>
-                    <div style="font-size:1.1rem; margin-top:5px;">
-                        • 최적 FFU 가동률: <span id="optRate" style="font-weight:bold;">0%</span><br>
-                        • 최소 시간당 공장 유지비용: <span id="optCost" style="font-weight:bold;">0 원</span>
+                    <div class="info-box">
+                        <h4>📦 시간당 처리량 (138.89개)</h4>
+                        <p>글로벌 주요 파운드리(TSMC 등)의 신규 공장 목표 생산량 기준인 **월 10만 장**을 기준으로 시간당 약 **138.89개**의 생산 속도를 산출했습니다.</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 그래프 및 수식 모델 파트 -->
-        <div>
-            <div class="card">
-                <div class="card-title">3. 가동률 변화에 따른 비용 곡선</div>
-                <div class="chart-container">
-                    <canvas id="costChart"></canvas>
+        <!-- Slide 3: 수학적 모델링 구조 -->
+        <div class="slide-card">
+            <div class="slide-title">3. 비용 함수 도출 과정</div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="info-box">
+                        <h4>1) 전력 소비 비용 함수 $E(x)$</h4>
+                        <p>유체역학의 **송풍기 상사법칙(Fan Laws)**에 의해 소비 전력은 회전수(가동률 $x$)의 3제곱에 비례합니다.</p>
+                        <p style="margin-top:10px; font-weight:bold; color:var(--primary-color);">
+                            $E(x) = E_{\text{max}} \cdot x^3 = 268,400 \cdot x^3$
+                        </p>
+                    </div>
+                    <div class="info-box">
+                        <h4>2) 불량 손실 비용 함수 $L(x)$</h4>
+                        <p>가동률 100%시 손실은 0원이며, 가동률 감소에 따른 손실 위험은 시간당 처리량($N_{\text{hour}}$) 및 단가($P$)에 비례하여 이차함수로 증가합니다.</p>
+                        <p style="margin-top:10px; font-weight:bold; color:#d9534f;">
+                            $L(x) = k(P) \cdot (x - 1)^2$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 결론 및 기대효과 -->
+        <div class="slide-card">
+            <div class="slide-title">4. 결론 및 실시간 시뮬레이션 활용</div>
+            <div class="slide-content">
+                미분을 통해 도출한 1차 도함수 $f'(x) = 3 E_{\text{max}} x^2 + 2 k(P) (x - 1) = 0$ 의 극솟점이 최적 운영 지점입니다.<br>
+                웨이퍼 단가 변화에 따라 최적 가동률이 자동 계산되는 시뮬레이터를 활용해 공장 운영비 절감안을 도출할 수 있습니다. 상단의 <strong>[⚙️ 실시간 시뮬레이터]</strong> 버튼을 눌러 조건별 변화를 직접 확인할 수 있습니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 시뮬레이터 화면 -->
+    <div id="simulatorView" class="view-section">
+        <header>
+            <h1>반도체 FAB 클린룸 FFU 가동률 최적화 모델</h1>
+            <p class="subtitle">전력 소비 비용(상사법칙 3제곱)과 불량 손실 비용 간의 최적 균형점 탐구 시뮬레이터</p>
+        </header>
+
+        <div class="grid">
+            <!-- 제어 및 입력 파트 -->
+            <div>
+                <div class="card">
+                    <div class="card-title">1. 시뮬레이션 변수 설정</div>
+                    
+                    <div class="form-group">
+                        <label>웨이퍼 단가 설정 옵션</label>
+                        <select id="waferPreset" onchange="updateWaferPriceOption()">
+                            <option value="7575000" selected>평균 가치 모델값 (약 757.5만원)</option>
+                            <option value="150000">300mm 프라임 웨이퍼 (약 15만원)</option>
+                            <option value="15000000">완성 공정 적용 웨이퍼 (약 1,500만원)</option>
+                            <option value="custom">직접 입력</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="waferPrice">웨이퍼 개당 단가 (원)</label>
+                        <input type="number" id="waferPrice" value="7575000" step="10000" disabled oninput="onCustomPriceInput()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>고정 조건 정보</label>
+                        <ul style="font-size:0.85rem; padding-left: 20px; color:#555;">
+                            <li>FFU 설치 대수: 10,000 대 (기사 역산 산출)</li>
+                            <li>시간당 웨이퍼 처리량: 약 138.89개 (TSMC 월 10만개 기준)</li>
+                            <li>최대 가동시 전력비(E<sub>max</sub>): 268,400원/시간 (평균 전력세 반영)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">2. FFU 가동률 실시간 조절</div>
+                    <div class="form-group">
+                        <label for="rateSlider">FFU 가동률 (x):</label>
+                        <div class="slider-container">
+                            <input type="range" id="rateSlider" min="0.3" max="1.0" step="0.0001" value="0.95" oninput="calculate()">
+                            <span class="slider-value" id="rateValue">95.00%</span>
+                        </div>
+                        <button class="btn-optimal" onclick="moveToOptimalRate()">🎯 최적 가동률로 맞추기</button>
+                    </div>
+
+                    <div class="result-box">
+                        <div>현재 가동률에서의 시간당 총비용:</div>
+                        <div class="result-value" id="currentTotalCost">0 원</div>
+                        <div style="font-size:0.85rem; color:#666; margin-top:5px;">
+                            • 전력비 E(x): <span id="currentCostE">0</span>원<br>
+                            • 불량 손실비 L(x): <span id="currentCostL">0</span>원
+                        </div>
+                    </div>
+
+                    <div class="optimal-box">
+                        <div style="font-weight:bold; color:#27ae60;">💡 최적 가동 조건 (최소 비용 지점)</div>
+                        <div style="font-size:1.1rem; margin-top:5px;">
+                            • 최적 FFU 가동률: <span id="optRate" style="font-weight:bold;">0%</span><br>
+                            • 최소 시간당 공장 유지비용: <span id="optCost" style="font-weight:bold;">0 원</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">4. 수학적 모델링 수학식</div>
-                <div class="formula-list">
-                    <strong>전력 소비 비용 함수 (송풍기 상사법칙 적용):</strong><br>
-                    E(x) = 268,400 × x<sup>3</sup><br><br>
-                    <strong>불량 손실 비용 함수 (x = 1 일 때 손실 0원):</strong><br>
-                    L(x) = <span id="formulaLCoeff" class="highlight-coeff">1,052,513,639</span> × (x - 1)<sup>2</sup><br><br>
-                    <strong>총비용 함수:</strong><br>
-                    y = f(x) = E(x) + L(x)<br>
-                    y = 268,400x<sup>3</sup> + <span id="formulaTotalCoeff" class="highlight-coeff">1,052,513,639</span>(x - 1)<sup>2</sup>
+            <!-- 그래프 및 수식 모델 파트 -->
+            <div>
+                <div class="card">
+                    <div class="card-title">3. 가동률 변화에 따른 비용 곡선</div>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">4. 수학적 모델링 수학식</div>
+                    <div class="formula-list">
+                        <strong>전력 소비 비용 함수 (송풍기 상사법칙 적용):</strong><br>
+                        E(x) = 268,400 × x<sup>3</sup><br><br>
+                        <strong>불량 손실 비용 함수 (x = 1 일 때 손실 0원):</strong><br>
+                        L(x) = <span id="formulaLCoeff" class="highlight-coeff">1,052,513,639</span> × (x - 1)<sup>2</sup><br><br>
+                        <strong>총비용 함수:</strong><br>
+                        y = f(x) = E(x) + L(x)<br>
+                        y = 268,400x<sup>3</sup> + <span id="formulaTotalCoeff" class="highlight-coeff">1,052,513,639</span>(x - 1)<sup>2</sup>
+                    </div>
                 </div>
             </div>
         </div>
@@ -265,6 +447,27 @@
 <script>
     let myChart = null;
     let currentBestX = 1.0;
+
+    function switchView(viewName) {
+        const presView = document.getElementById('presentationView');
+        const simView = document.getElementById('simulatorView');
+        const btnPres = document.getElementById('btnPresentation');
+        const btnSim = document.getElementById('btnSimulator');
+
+        if (viewName === 'presentation') {
+            presView.classList.add('active');
+            simView.classList.remove('active');
+            btnPres.classList.add('active');
+            btnSim.classList.remove('active');
+        } else {
+            presView.classList.remove('active');
+            simView.classList.add('active');
+            btnPres.classList.remove('active');
+            btnSim.classList.add('active');
+            
+            calculate(false);
+        }
+    }
 
     function updateWaferPriceOption() {
         const presetSelect = document.getElementById('waferPreset');
@@ -295,7 +498,6 @@
         const basePrice = 7575000; 
         const L_coeff = Math.round(1052513639 * (waferPrice / basePrice));
 
-        // 하단 수학식 계수 실시간 변경 처리
         const formattedLCoeff = L_coeff.toLocaleString();
         document.getElementById('formulaLCoeff').innerText = formattedLCoeff;
         document.getElementById('formulaTotalCoeff').innerText = formattedLCoeff;
