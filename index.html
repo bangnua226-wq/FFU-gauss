@@ -29,7 +29,6 @@
             margin: 0 auto;
         }
 
-        /* Top Navigation (탭 버튼) */
         .top-nav {
             display: flex;
             justify-content: center;
@@ -61,7 +60,6 @@
             box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
         }
 
-        /* View Section Toggle */
         .view-section {
             display: none;
         }
@@ -82,7 +80,6 @@
         h1 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 1.8rem; }
         p.subtitle { margin: 0; color: #666; font-size: 0.95rem; }
 
-        /* Presentation Layout & Slide Styling */
         .slide-card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -144,7 +141,6 @@
             color: #666;
         }
 
-        /* Simulator Styles */
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -272,7 +268,6 @@
 <body>
 
 <div class="container">
-    <!-- 화면 전환 상단 탭 버튼 -->
     <div class="top-nav">
         <button id="btnPresentation" class="nav-btn active" onclick="switchView('presentation')">📢 프레젠테이션</button>
         <button id="btnSimulator" class="nav-btn" onclick="switchView('simulator')">⚙️ 실시간 시뮬레이터</button>
@@ -282,70 +277,59 @@
     <div id="presentationView" class="view-section active">
         <header>
             <h1>반도체 FAB 클린룸 FFU 가동률 최적화 모델</h1>
-            <p class="subtitle">전력 소비 절감과 불량 손실 최소화의 수학적 최적화 탐구</p>
+            <p class="subtitle">전력 소비 비용(상사법칙 3제곱)과 불량 손실 비용 간의 최적 균형점 탐구 시뮬레이터</p>
         </header>
 
-        <!-- Slide 1: 탐구 배경 및 목적 -->
+        <!-- Slide 1: 수치 산출 근거 -->
         <div class="slide-card">
-            <div class="slide-title">1. 탐구 배경 및 목적</div>
+            <div class="slide-title">1. 수학적 모델링 수치 산출 근거</div>
             <div class="slide-content">
-                반도체 생산 공장(FAB)의 클린룸 청정도를 유지하는 **FFU(Fan Filter Unit)**는 24시간 연속 운전되는 고소비 전력 설비입니다.<br>
-                전력비를 아끼기 위해 FFU 가동률을 낮추면 미세입자 유입으로 인한 **웨이퍼 불량 손실비**가 급증하고, 가동률을 높이면 **전력 소비 비용**이 급증하는 상충 관계(Trade-off)가 발생합니다.<br>
-                본 탐구는 미분을 활용하여 이 두 비용의 합을 최소화하는 **최적 가동률**을 도출하는 데 목적이 있습니다.
-            </div>
-        </div>
-
-        <!-- Slide 2: 수치 산출 근거 -->
-        <div class="slide-card">
-            <div class="slide-title">2. 수학적 모델링 수치 산출 근거</div>
-            <div class="slide-content">
-                실제 산업 환경에 기반한 신뢰성 있는 모델을 구축하기 위해 아래와 같이 조건을 설정했습니다.
                 <div class="grid-3">
                     <div class="info-box">
-                        <h4>⚡ 공업용 전력 단가</h4>
-                        <p>고압 A, 선택 III 조건을 기준으로 봄·가을·여름·겨울 및 경·중간·최대 부하 시간대별 전력 요금을 종합 반영한 **평균 요금**을 도출하여 적용했습니다.</p>
+                        <h4>공업용 전력 단가</h4>
+                        <p>고압 A 선택 3 조건을 기준으로 계절별, 시간대별 전기세를 평균내서 1kW당 단가를 구했습니다.</p>
                     </div>
                     <div class="info-box">
-                        <h4>🏭 FFU 설치 대수 (10,000대)</h4>
-                        <p>산업 보도자료 분석을 통해 주요 반도체 공장 규격별 누적 생산 대수를 역산하여, 최신 표준 규격 FAB 1개소당 설치 대수를 **10,000대**로 설정했습니다.</p>
+                        <h4>FFU 설치 대수 (10,000대)</h4>
+                        <p>200만 대 생산 기사를 바탕으로 200개 공장 규모를 역산하여 공장에서 가동하는 FFU 대수를 10,000대로 설정했습니다.</p>
                     </div>
                     <div class="info-box">
-                        <h4>📦 시간당 처리량 (138.89개)</h4>
-                        <p>글로벌 주요 파운드리(TSMC 등)의 신규 공장 목표 생산량 기준인 **월 10만 장**을 기준으로 시간당 약 **138.89개**의 생산 속도를 산출했습니다.</p>
+                        <h4>시간당 처리량 (138.89개)</h4>
+                        <p>TSMC 새 공장의 목표인 월별 웨이퍼 생산수 10만 대를 참고하여 시간당 처리량(100,000 / 30 / 24)을 계산했습니다.</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Slide 3: 수학적 모델링 구조 -->
+        <!-- Slide 2: 수학적 모델링 구조 -->
         <div class="slide-card">
-            <div class="slide-title">3. 비용 함수 도출 과정</div>
+            <div class="slide-title">2. 비용 함수 도출 과정</div>
             <div class="slide-content">
                 <div class="grid-2">
                     <div class="info-box">
-                        <h4>1) 전력 소비 비용 함수 $E(x)$</h4>
-                        <p>유체역학의 **송풍기 상사법칙(Fan Laws)**에 의해 소비 전력은 회전수(가동률 $x$)의 3제곱에 비례합니다.</p>
-                        <p style="margin-top:10px; font-weight:bold; color:var(--primary-color);">
-                            $E(x) = E_{\text{max}} \cdot x^3 = 268,400 \cdot x^3$
+                        <h4>전력 소비 비용 함수 E(x)</h4>
+                        <p>송풍기 상사법칙에 따라 소비 전력은 가동률 x의 3제곱에 비례합니다.</p>
+                        <p style="margin-top:10px; color:var(--primary-color);">
+                            E(x) = E<sub>max</sub> · x<sup>3</sup> = 268,400 · x<sup>3</sup>
                         </p>
                     </div>
                     <div class="info-box">
-                        <h4>2) 불량 손실 비용 함수 $L(x)$</h4>
-                        <p>가동률 100%시 손실은 0원이며, 가동률 감소에 따른 손실 위험은 시간당 처리량($N_{\text{hour}}$) 및 단가($P$)에 비례하여 이차함수로 증가합니다.</p>
-                        <p style="margin-top:10px; font-weight:bold; color:#d9534f;">
-                            $L(x) = k(P) \cdot (x - 1)^2$
+                        <h4>불량 손실 비용 함수 L(x)</h4>
+                        <p>x = 1 일 때 손실은 0원이며, 시간당 처리량과 웨이퍼 단가에 비례하여 이차함수 형태로 손실이 발생합니다.</p>
+                        <p style="margin-top:10px; color:#d9534f;">
+                            L(x) = k(P) · (x - 1)<sup>2</sup>
                         </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Slide 4: 결론 및 기대효과 -->
+        <!-- Slide 3: 총비용 함수 합성 및 최적화 -->
         <div class="slide-card">
-            <div class="slide-title">4. 결론 및 실시간 시뮬레이션 활용</div>
+            <div class="slide-title">3. 총비용 함수 합성 및 최적화</div>
             <div class="slide-content">
-                미분을 통해 도출한 1차 도함수 $f'(x) = 3 E_{\text{max}} x^2 + 2 k(P) (x - 1) = 0$ 의 극솟점이 최적 운영 지점입니다.<br>
-                웨이퍼 단가 변화에 따라 최적 가동률이 자동 계산되는 시뮬레이터를 활용해 공장 운영비 절감안을 도출할 수 있습니다. 상단의 <strong>[⚙️ 실시간 시뮬레이터]</strong> 버튼을 눌러 조건별 변화를 직접 확인할 수 있습니다.
+                총비용 함수 y = f(x) = E(x) + L(x) = 268,400x<sup>3</sup> + k(P)(x - 1)<sup>2</sup><br>
+                미분을 통한 최적화: f'(x) = 3 E<sub>max</sub> x<sup>2</sup> + 2 k(P) (x - 1) = 0 조건에서 최적 FFU 가동률 x*를 구합니다.
             </div>
         </div>
     </div>
@@ -358,7 +342,6 @@
         </header>
 
         <div class="grid">
-            <!-- 제어 및 입력 파트 -->
             <div>
                 <div class="card">
                     <div class="card-title">1. 시뮬레이션 변수 설정</div>
@@ -382,7 +365,7 @@
                         <label>고정 조건 정보</label>
                         <ul style="font-size:0.85rem; padding-left: 20px; color:#555;">
                             <li>FFU 설치 대수: 10,000 대 (기사 역산 산출)</li>
-                            <li>시간당 웨이퍼 처리량: 약 138.89개 (TSMC 월 10만개 기준)</li>
+                            <li>시간당 웨이퍼 처리량: 약 138.89개 (월 10만개 기준)</li>
                             <li>최대 가동시 전력비(E<sub>max</sub>): 268,400원/시간 (평균 전력세 반영)</li>
                         </ul>
                     </div>
@@ -409,16 +392,15 @@
                     </div>
 
                     <div class="optimal-box">
-                        <div style="font-weight:bold; color:#27ae60;">💡 최적 가동 조건 (최소 비용 지점)</div>
+                        <div style="color:#27ae60;">💡 최적 가동 조건 (최소 비용 지점)</div>
                         <div style="font-size:1.1rem; margin-top:5px;">
-                            • 최적 FFU 가동률: <span id="optRate" style="font-weight:bold;">0%</span><br>
-                            • 최소 시간당 공장 유지비용: <span id="optCost" style="font-weight:bold;">0 원</span>
+                            • 최적 FFU 가동률: <span id="optRate">0%</span><br>
+                            • 최소 시간당 공장 유지비용: <span id="optCost">0 원</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 그래프 및 수식 모델 파트 -->
             <div>
                 <div class="card">
                     <div class="card-title">3. 가동률 변화에 따른 비용 곡선</div>
@@ -430,11 +412,11 @@
                 <div class="card">
                     <div class="card-title">4. 수학적 모델링 수학식</div>
                     <div class="formula-list">
-                        <strong>전력 소비 비용 함수 (송풍기 상사법칙 적용):</strong><br>
+                        전력 소비 비용 함수 (송풍기 상사법칙 적용):<br>
                         E(x) = 268,400 × x<sup>3</sup><br><br>
-                        <strong>불량 손실 비용 함수 (x = 1 일 때 손실 0원):</strong><br>
+                        불량 손실 비용 함수 (x = 1 일 때 손실 0원):<br>
                         L(x) = <span id="formulaLCoeff" class="highlight-coeff">1,052,513,639</span> × (x - 1)<sup>2</sup><br><br>
-                        <strong>총비용 함수:</strong><br>
+                        총비용 함수:<br>
                         y = f(x) = E(x) + L(x)<br>
                         y = 268,400x<sup>3</sup> + <span id="formulaTotalCoeff" class="highlight-coeff">1,052,513,639</span>(x - 1)<sup>2</sup>
                     </div>
